@@ -38,13 +38,13 @@ $HOME/Library/Logs/TikTokBackupDays/launchd.err.log
 Run this on macOS:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dammu/TikTokBackupDays/master/scripts/bootstrap_github.sh | bash
+curl -fsSL https://raw.githubusercontent.com/dammu/TikTokBackupDays/master/scripts/install_from_github.sh | bash
 ```
 
 The default schedule is `05:00` in the Mac's local display time. To choose another time:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dammu/TikTokBackupDays/master/scripts/bootstrap_github.sh | bash -s -- --time 06:30
+curl -fsSL https://raw.githubusercontent.com/dammu/TikTokBackupDays/master/scripts/install_from_github.sh | bash -s -- --time 06:30
 ```
 
 This downloads the repo zip into:
