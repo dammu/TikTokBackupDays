@@ -1,0 +1,4 @@
+*.sh text eol=lf
+*.plist text eol=lf
+*.template text eol=lf
+README.md text eol=lf
