@@ -33,15 +33,15 @@ $HOME/Library/Logs/TikTokBackupDays/launchd.err.log
 - Writes detailed logs for start, source, destination, validation, prune, backup, and restore events.
 - Creates a pre-restore safety backup before restoring over current files.
 
-## One-Line Install From Private GitHub Repo
+## One-Line Install
 
-Because this repo is private, unauthenticated `curl` cannot download it. Create a fine-grained GitHub token with read-only `Contents` access to this repository, then run:
+Run this on macOS:
 
 ```bash
-GITHUB_TOKEN='YOUR_TOKEN_HERE' bash -c 'curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github.raw" "https://api.github.com/repos/dammu/TikTokBackupDays/contents/scripts/bootstrap_private_github.sh?ref=master" | bash'
+curl -fsSL https://raw.githubusercontent.com/dammu/TikTokBackupDays/master/scripts/bootstrap_github.sh | bash
 ```
 
-This downloads the repo zip from GitHub API into:
+This downloads the repo zip into:
 
 ```text
 $HOME/.local/share/TikTokBackupDays
@@ -52,8 +52,6 @@ Then it runs:
 ```bash
 $HOME/.local/share/TikTokBackupDays/scripts/install_launch_agent.sh
 ```
-
-Do not paste this token into shared logs or screenshots. A fine-grained token with only read access to this single private repo is recommended.
 
 ## Git Clone Deploy On A Mac
 
