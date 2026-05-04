@@ -13,7 +13,7 @@ $HOME/Library/Application Support/TikTok Live Studio/TTStore
 Backup destination:
 
 ```text
-$HOME/Library/Application Support/TikTokBackupDays/TTStoreBackups
+$HOME/Documents/TikTokBackupDays/TTStoreBackups
 ```
 
 Logs:
@@ -26,7 +26,7 @@ $HOME/Library/Logs/TikTokBackupDays/launchd.err.log
 
 ## Behavior
 
-- Runs automatically every day at `03:15` local time.
+- Runs automatically every day at `05:00` macOS local display time, using the Mac's configured time zone.
 - Also runs once immediately after installation because `RunAtLoad` is enabled.
 - Keeps backups for `90` days.
 - Rejects suspicious backups smaller than `1` byte or larger than `50 MB`.
@@ -73,7 +73,7 @@ Manual backup directories are named like:
 Automatic backup directories are named like:
 
 ```text
-2026-05-04_031500_auto
+2026-05-04_050000_auto
 ```
 
 ## List Backups

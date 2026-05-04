@@ -5,7 +5,7 @@ IFS=$'\n\t'
 
 readonly APP_NAME="tiktok-ttstore-backup"
 readonly SOURCE_DIR="$HOME/Library/Application Support/TikTok Live Studio/TTStore"
-readonly BACKUP_ROOT="$HOME/Library/Application Support/TikTokBackupDays/TTStoreBackups"
+readonly BACKUP_ROOT="$HOME/Documents/TikTokBackupDays/TTStoreBackups"
 readonly LOG_DIR="$HOME/Library/Logs/TikTokBackupDays"
 readonly LOG_FILE="$LOG_DIR/backup.log"
 readonly RETENTION_DAYS=90
