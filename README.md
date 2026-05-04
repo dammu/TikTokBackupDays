@@ -117,6 +117,18 @@ Then it regenerates and reloads the LaunchAgent plist.
 
 Existing backups and logs are not deleted.
 
+After one-line install, you can also update using the installed updater:
+
+```bash
+$HOME/.local/share/TikTokBackupDays/scripts/update_installed.sh
+```
+
+The updater preserves the currently installed schedule when possible. To update and change the schedule:
+
+```bash
+$HOME/.local/share/TikTokBackupDays/scripts/update_installed.sh --time 06:30
+```
+
 ## Manual Backup
 
 Automatic-style backup from the command line:
@@ -147,22 +159,34 @@ $HOME/.local/share/TikTokBackupDays/scripts/tiktok_ttstore_backup.sh list
 
 ## Restore
 
-Restore latest backup with confirmation:
+List backups and choose one by number:
 
 ```bash
 $HOME/.local/share/TikTokBackupDays/scripts/tiktok_ttstore_backup.sh restore
 ```
 
+Restore latest backup with confirmation:
+
+```bash
+$HOME/.local/share/TikTokBackupDays/scripts/tiktok_ttstore_backup.sh restore latest
+```
+
 Restore latest backup without confirmation:
 
 ```bash
-$HOME/.local/share/TikTokBackupDays/scripts/tiktok_ttstore_backup.sh restore --yes
+$HOME/.local/share/TikTokBackupDays/scripts/tiktok_ttstore_backup.sh restore latest --yes
 ```
 
 Restore a specific backup:
 
 ```bash
-$HOME/.local/share/TikTokBackupDays/scripts/tiktok_ttstore_backup.sh restore --date 2026-05-04_153000_manual_account_a --yes
+$HOME/.local/share/TikTokBackupDays/scripts/tiktok_ttstore_backup.sh restore specific 2026-05-04_153000_manual_account_a
+```
+
+Restore a specific backup without confirmation:
+
+```bash
+$HOME/.local/share/TikTokBackupDays/scripts/tiktok_ttstore_backup.sh restore specific 2026-05-04_153000_manual_account_a --yes
 ```
 
 Restore names are restricted to the expected backup-name pattern to avoid accidental path traversal.

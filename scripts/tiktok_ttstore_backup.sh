@@ -15,6 +15,7 @@ readonly MIN_BACKUP_BYTES=1
 
 MODE="auto"
 MANUAL_NOTE=""
+RESTORE_MODE="select"
 RESTORE_DATE=""
 YES="false"
 
@@ -25,7 +26,9 @@ Usage:
 
 Commands:
   backup                 Backup current TTStore state. Default command.
-  restore                Restore the latest backup or --date YYYY-mm-dd_HHMMSS_LABEL.
+  restore                List backups and interactively choose one by number.
+  restore latest         Restore the latest backup.
+  restore specific NAME  Restore a specific backup directory name.
   list                   List available backups.
 
 Options:
@@ -40,8 +43,9 @@ Examples:
   ./scripts/tiktok_ttstore_backup.sh backup --manual
   ./scripts/tiktok_ttstore_backup.sh backup --manual --note account_a
   ./scripts/tiktok_ttstore_backup.sh list
-  ./scripts/tiktok_ttstore_backup.sh restore --yes
-  ./scripts/tiktok_ttstore_backup.sh restore --date 2026-05-04_153000_manual_account_a --yes
+  ./scripts/tiktok_ttstore_backup.sh restore
+  ./scripts/tiktok_ttstore_backup.sh restore latest --yes
+  ./scripts/tiktok_ttstore_backup.sh restore specific 2026-05-04_153000_manual_account_a --yes
 USAGE
 }
 
@@ -80,6 +84,11 @@ dir_size_bytes() {
 latest_backup() {
   [ -d "$BACKUP_ROOT" ] || return 1
   find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -name '????-??-??_??????_*' | sort | tail -n 1
+}
+
+all_backups_newest_first() {
+  [ -d "$BACKUP_ROOT" ] || return 1
+  find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -name '????-??-??_??????_*' | sort -r
 }
 
 validate_backup_size() {
@@ -213,15 +222,61 @@ list_backups() {
   find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -name '????-??-??_??????_*' | sort
 }
 
+choose_restore_backup() {
+  local backups_file count choice selected
+
+  if [ ! -t 0 ]; then
+    fail "restore requires an interactive terminal; use 'restore latest' or 'restore specific NAME' instead"
+  fi
+
+  backups_file="$(mktemp)" || return 1
+  all_backups_newest_first > "$backups_file"
+  count="$(wc -l < "$backups_file" | tr -d ' ')"
+
+  if [ "$count" = "0" ]; then
+    rm -f "$backups_file"
+    return 1
+  fi
+
+  printf 'Available backups, newest first:\n' >&2
+  nl -w 2 -s '. ' "$backups_file" >&2
+  printf 'Choose backup number to restore: ' >&2
+  read -r choice
+
+  case "$choice" in
+    *[!0-9]*|'')
+      rm -f "$backups_file"
+      fail "Invalid backup selection: $choice"
+      ;;
+  esac
+
+  if [ "$choice" -lt 1 ] || [ "$choice" -gt "$count" ]; then
+    rm -f "$backups_file"
+    fail "Backup selection out of range: $choice"
+  fi
+
+  selected="$(sed -n "${choice}p" "$backups_file")"
+  rm -f "$backups_file"
+  [ -n "$selected" ] || return 1
+  printf '%s\n' "$selected"
+}
+
 restore_backup() {
   local selected backup_name restore_safety_dir stamp
 
-  if [ -n "$RESTORE_DATE" ]; then
-    validate_restore_name "$RESTORE_DATE" || fail "Invalid backup name: $RESTORE_DATE"
-    selected="$BACKUP_ROOT/$RESTORE_DATE"
-  else
-    selected="$(latest_backup || true)"
-  fi
+  case "$RESTORE_MODE" in
+    select)
+      selected="$(choose_restore_backup || true)"
+      ;;
+    latest)
+      selected="$(latest_backup || true)"
+      ;;
+    specific)
+      [ -n "$RESTORE_DATE" ] || fail "restore specific requires a backup directory name"
+      validate_restore_name "$RESTORE_DATE" || fail "Invalid backup name: $RESTORE_DATE"
+      selected="$BACKUP_ROOT/$RESTORE_DATE"
+      ;;
+  esac
 
   [ -n "$selected" ] || fail "No backups found under: $BACKUP_ROOT"
   [ -d "$selected" ] || fail "Backup does not exist: $selected"
@@ -273,6 +328,25 @@ while [ "$#" -gt 0 ]; do
     backup|restore|list)
       COMMAND="$1"
       ;;
+    latest)
+      if [ "$COMMAND" = "restore" ]; then
+        RESTORE_MODE="latest"
+      else
+        usage
+        fail "Unexpected argument: $1"
+      fi
+      ;;
+    specific)
+      if [ "$COMMAND" = "restore" ]; then
+        RESTORE_MODE="specific"
+        shift
+        [ "$#" -gt 0 ] || fail "restore specific requires a backup directory name"
+        RESTORE_DATE="$1"
+      else
+        usage
+        fail "Unexpected argument: $1"
+      fi
+      ;;
     --manual)
       MODE="manual"
       ;;
@@ -286,6 +360,7 @@ while [ "$#" -gt 0 ]; do
       shift
       [ "$#" -gt 0 ] || fail "--date requires a backup directory name"
       RESTORE_DATE="$1"
+      RESTORE_MODE="specific"
       ;;
     --yes)
       YES="true"
