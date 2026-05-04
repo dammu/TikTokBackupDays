@@ -35,6 +35,11 @@ $HOME/Library/Logs/TikTokBackupDays/launchd.err.log
 
 ## Deploy On A Mac
 
+Prerequisites on macOS:
+
+- `bash`, `python3`, `rsync`, and `launchctl` available from the default system install or developer tools.
+- Run these commands on macOS, not from a Windows clone of the repo.
+
 Clone the repo, then run:
 
 ```bash
@@ -103,6 +108,14 @@ Restore a specific backup:
 ```
 
 ## Check Service Status
+
+Validate the generated plist:
+
+```bash
+plutil -lint "$HOME/Library/LaunchAgents/com.tiktokbackupdays.ttstore.plist"
+```
+
+Check the LaunchAgent status:
 
 ```bash
 launchctl print "gui/$(id -u)/com.tiktokbackupdays.ttstore"

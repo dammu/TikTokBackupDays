@@ -8,6 +8,7 @@ readonly SOURCE_DIR="$HOME/Library/Application Support/TikTok Live Studio/TTStor
 readonly BACKUP_ROOT="$HOME/Documents/TikTokBackupDays/TTStoreBackups"
 readonly LOG_DIR="$HOME/Library/Logs/TikTokBackupDays"
 readonly LOG_FILE="$LOG_DIR/backup.log"
+readonly LOCK_DIR="$BACKUP_ROOT/.lock"
 readonly RETENTION_DAYS=90
 readonly MAX_BACKUP_BYTES=$((50 * 1024 * 1024))
 readonly MIN_BACKUP_BYTES=1
@@ -55,6 +56,19 @@ fail() {
   exit 1
 }
 
+release_lock() {
+  [ -n "${LOCK_HELD:-}" ] && rmdir "$LOCK_DIR" 2>/dev/null || true
+}
+
+acquire_lock() {
+  mkdir -p "$BACKUP_ROOT"
+  if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+    fail "another backup or restore is already running: $LOCK_DIR"
+  fi
+  LOCK_HELD="true"
+  trap release_lock EXIT INT TERM
+}
+
 dir_size_bytes() {
   local dir="$1"
   du -sk "$dir" 2>/dev/null | awk '{print $1 * 1024}'
@@ -85,11 +99,43 @@ validate_backup_size() {
   return 0
 }
 
+validate_backup_not_empty() {
+  local backup_dir="$1"
+  local size_bytes
+  size_bytes="$(dir_size_bytes "$backup_dir")"
+
+  [ -n "$size_bytes" ] || return 1
+  if [ "$size_bytes" -lt "$MIN_BACKUP_BYTES" ]; then
+    log "Backup size is suspiciously small: ${size_bytes} bytes"
+    return 1
+  fi
+
+  log "Backup size validated for restore: ${size_bytes} bytes"
+  return 0
+}
+
+validate_restore_name() {
+  local name="$1"
+  case "$name" in
+    *[!/A-Za-z0-9_-]*|*/*|*..*)
+      return 1
+      ;;
+  esac
+
+  case "$name" in
+    ????-??-??_??????_auto|????-??-??_??????_manual|????-??-??_??????_pre_restore)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
 prune_old_backups() {
   [ -d "$BACKUP_ROOT" ] || return 0
   find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -mtime +"$RETENTION_DAYS" -print | while IFS= read -r old_backup; do
     log "Pruning old backup: $old_backup"
-    rm -rf "$old_backup"
+    rm -rf "$old_backup" || log "ERROR: failed to prune old backup: $old_backup"
   done
 }
 
@@ -100,10 +146,13 @@ backup_now() {
   [ -d "$SOURCE_DIR" ] || fail "Source directory does not exist: $SOURCE_DIR"
 
   mkdir -p "$BACKUP_ROOT" "$LOG_DIR"
+  acquire_lock
 
   stamp="$(date '+%Y-%m-%d_%H%M%S')"
   backup_dir="$BACKUP_ROOT/${stamp}_${label}"
   temp_dir="$BACKUP_ROOT/.${stamp}_${label}.tmp"
+
+  [ ! -e "$backup_dir" ] || fail "backup destination already exists: $backup_dir"
 
   log "Starting ${label} backup"
   log "Source: $SOURCE_DIR"
@@ -140,6 +189,7 @@ restore_backup() {
   local selected backup_name restore_safety_dir stamp
 
   if [ -n "$RESTORE_DATE" ]; then
+    validate_restore_name "$RESTORE_DATE" || fail "Invalid backup name: $RESTORE_DATE"
     selected="$BACKUP_ROOT/$RESTORE_DATE"
   else
     selected="$(latest_backup || true)"
@@ -147,9 +197,17 @@ restore_backup() {
 
   [ -n "$selected" ] || fail "No backups found under: $BACKUP_ROOT"
   [ -d "$selected" ] || fail "Backup does not exist: $selected"
-  validate_backup_size "$selected" || fail "Selected backup failed size validation: $selected"
-
   backup_name="$(basename "$selected")"
+
+  case "$backup_name" in
+    *_pre_restore)
+      validate_backup_not_empty "$selected" || fail "Selected backup failed size validation: $selected"
+      ;;
+    *)
+      validate_backup_size "$selected" || fail "Selected backup failed size validation: $selected"
+      ;;
+  esac
+
   log "Preparing restore from: $backup_name"
 
   if [ "$YES" != "true" ]; then
@@ -159,8 +217,10 @@ restore_backup() {
   fi
 
   mkdir -p "$SOURCE_DIR" "$BACKUP_ROOT"
+  acquire_lock
   stamp="$(date '+%Y-%m-%d_%H%M%S')"
   restore_safety_dir="$BACKUP_ROOT/${stamp}_pre_restore"
+  [ ! -e "$restore_safety_dir" ] || fail "pre-restore safety backup already exists: $restore_safety_dir"
 
   if [ -d "$SOURCE_DIR" ] && [ "$(find "$SOURCE_DIR" -mindepth 1 -maxdepth 1 2>/dev/null | wc -l | tr -d ' ')" != "0" ]; then
     log "Creating pre-restore safety backup: $restore_safety_dir"
