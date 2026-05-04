@@ -14,6 +14,7 @@ readonly MAX_BACKUP_BYTES=$((50 * 1024 * 1024))
 readonly MIN_BACKUP_BYTES=1
 
 MODE="auto"
+MANUAL_NOTE=""
 RESTORE_DATE=""
 YES="false"
 
@@ -29,6 +30,7 @@ Commands:
 
 Options:
   --manual               Mark a backup as manual.
+  --note TEXT            Add a sanitized note suffix to a manual backup.
   --date NAME            Restore a specific backup directory name.
   --yes                  Restore without interactive confirmation.
   -h, --help             Show this help.
@@ -36,9 +38,10 @@ Options:
 Examples:
   ./scripts/tiktok_ttstore_backup.sh
   ./scripts/tiktok_ttstore_backup.sh backup --manual
+  ./scripts/tiktok_ttstore_backup.sh backup --manual --note account_a
   ./scripts/tiktok_ttstore_backup.sh list
   ./scripts/tiktok_ttstore_backup.sh restore --yes
-  ./scripts/tiktok_ttstore_backup.sh restore --date 2026-05-04_153000_manual --yes
+  ./scripts/tiktok_ttstore_backup.sh restore --date 2026-05-04_153000_manual_account_a --yes
 USAGE
 }
 
@@ -123,12 +126,21 @@ validate_restore_name() {
   esac
 
   case "$name" in
-    ????-??-??_??????_auto|????-??-??_??????_manual|????-??-??_??????_pre_restore)
+    ????-??-??_??????_auto|????-??-??_??????_manual|????-??-??_??????_manual_*|????-??-??_??????_pre_restore)
       return 0
       ;;
   esac
 
   return 1
+}
+
+sanitize_note() {
+  local raw="$1"
+  local note
+  note="$(printf '%s' "$raw" | tr '[:upper:]' '[:lower:]' | tr -cs '[:alnum:]_-' '_')"
+  note="${note##_}"
+  note="${note%%_}"
+  printf '%.40s' "$note"
 }
 
 prune_old_backups() {
@@ -174,6 +186,22 @@ backup_now() {
   mv "$temp_dir" "$backup_dir" || fail "failed to finalize backup"
   prune_old_backups
   log "Backup completed: $backup_dir"
+}
+
+manual_label() {
+  local note
+
+  if [ -z "$MANUAL_NOTE" ] && [ -t 0 ]; then
+    printf 'Optional account note for this manual backup. Press Enter to skip: ' >&2
+    read -r MANUAL_NOTE
+  fi
+
+  note="$(sanitize_note "$MANUAL_NOTE")"
+  if [ -n "$note" ]; then
+    printf 'manual_%s' "$note"
+  else
+    printf 'manual'
+  fi
 }
 
 list_backups() {
@@ -248,6 +276,12 @@ while [ "$#" -gt 0 ]; do
     --manual)
       MODE="manual"
       ;;
+    --note)
+      shift
+      [ "$#" -gt 0 ] || fail "--note requires a value"
+      MANUAL_NOTE="$1"
+      MODE="manual"
+      ;;
     --date)
       shift
       [ "$#" -gt 0 ] || fail "--date requires a backup directory name"
@@ -270,7 +304,11 @@ done
 
 case "$COMMAND" in
   backup)
-    backup_now "$MODE"
+    if [ "$MODE" = "manual" ]; then
+      backup_now "$(manual_label)"
+    else
+      backup_now "$MODE"
+    fi
     ;;
   restore)
     restore_backup

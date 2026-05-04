@@ -89,10 +89,19 @@ Manual marked backup:
 ./scripts/tiktok_ttstore_backup.sh backup --manual
 ```
 
+For manual backups, the script asks for an optional account note. Press Enter to skip. The note is sanitized and appended to the backup directory name.
+
+Non-interactive manual backup with account note:
+
+```bash
+./scripts/tiktok_ttstore_backup.sh backup --manual --note account_a
+```
+
 Manual backup directories are named like:
 
 ```text
 2026-05-04_153000_manual
+2026-05-04_153000_manual_account_a
 ```
 
 Automatic backup directories are named like:
