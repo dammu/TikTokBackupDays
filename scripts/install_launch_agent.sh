@@ -65,20 +65,20 @@ fi
 mkdir -p "$HOME/Library/LaunchAgents" "$LOG_DIR"
 chmod +x "$SCRIPT_PATH"
 
-SCRIPT_PATH="$SCRIPT_PATH" LOG_DIR="$LOG_DIR" PLIST_PATH="$PLIST_PATH" SCHEDULE_HOUR="$SCHEDULE_HOUR" SCHEDULE_MINUTE="$SCHEDULE_MINUTE" python3 <<'PY'
+PLIST_SCRIPT_PATH="$SCRIPT_PATH" PLIST_LOG_DIR="$LOG_DIR" PLIST_OUTPUT_PATH="$PLIST_PATH" PLIST_SCHEDULE_HOUR="$SCHEDULE_HOUR" PLIST_SCHEDULE_MINUTE="$SCHEDULE_MINUTE" python3 <<'PY'
 import os
 import plistlib
 
 plist = {
     "Label": "com.tiktokbackupdays.ttstore",
-    "ProgramArguments": [os.environ["SCRIPT_PATH"]],
-    "StartCalendarInterval": {"Hour": int(os.environ["SCHEDULE_HOUR"]), "Minute": int(os.environ["SCHEDULE_MINUTE"])},
+    "ProgramArguments": [os.environ["PLIST_SCRIPT_PATH"]],
+    "StartCalendarInterval": {"Hour": int(os.environ["PLIST_SCHEDULE_HOUR"]), "Minute": int(os.environ["PLIST_SCHEDULE_MINUTE"])},
     "RunAtLoad": True,
-    "StandardOutPath": os.path.join(os.environ["LOG_DIR"], "launchd.out.log"),
-    "StandardErrorPath": os.path.join(os.environ["LOG_DIR"], "launchd.err.log"),
+    "StandardOutPath": os.path.join(os.environ["PLIST_LOG_DIR"], "launchd.out.log"),
+    "StandardErrorPath": os.path.join(os.environ["PLIST_LOG_DIR"], "launchd.err.log"),
 }
 
-with open(os.environ["PLIST_PATH"], "wb") as f:
+with open(os.environ["PLIST_OUTPUT_PATH"], "wb") as f:
     plistlib.dump(plist, f, sort_keys=False)
 PY
 
