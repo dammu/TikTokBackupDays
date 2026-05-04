@@ -8,6 +8,8 @@ readonly BRANCH="master"
 readonly INSTALL_DIR="$HOME/.local/share/TikTokBackupDays"
 readonly ZIP_URL="https://github.com/${OWNER}/${REPO}/archive/refs/heads/${BRANCH}.zip"
 
+INSTALL_ARGS=("$@")
+
 tmp_dir="$(mktemp -d)"
 cleanup() {
   rm -rf "$tmp_dir"
@@ -33,6 +35,6 @@ repo_root="$(find "$extract_dir" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
 cp -R "$repo_root/." "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR/scripts/"*.sh
 
-"$INSTALL_DIR/scripts/install_launch_agent.sh"
+"$INSTALL_DIR/scripts/install_launch_agent.sh" "${INSTALL_ARGS[@]}"
 
 printf 'Installed repository files to %s\n' "$INSTALL_DIR"

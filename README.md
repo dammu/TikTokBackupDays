@@ -41,6 +41,12 @@ Run this on macOS:
 curl -fsSL https://raw.githubusercontent.com/dammu/TikTokBackupDays/master/scripts/bootstrap_github.sh | bash
 ```
 
+The default schedule is `05:00` in the Mac's local display time. To choose another time:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dammu/TikTokBackupDays/master/scripts/bootstrap_github.sh | bash -s -- --time 06:30
+```
+
 This downloads the repo zip into:
 
 ```text
@@ -65,6 +71,12 @@ Clone the repo, then run:
 ```bash
 chmod +x scripts/*.sh
 ./scripts/install_launch_agent.sh
+```
+
+Optional custom schedule:
+
+```bash
+./scripts/install_launch_agent.sh --time 06:30
 ```
 
 The installer generates this user LaunchAgent:
